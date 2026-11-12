@@ -1,20 +1,15 @@
 
 services:
-
   # Jenkins CI/CD
   jenkins:
-    build:
-      context: ./jenkins
-      dockerfile: Dockerfile
+    image: jenkins/jenkins:lts-jdk21
     container_name: jenkins
     restart: unless-stopped
-    privileged: true
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
-      - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home_clean:/var/jenkins_home
     networks:
       - devops-network
 
@@ -71,6 +66,7 @@ services:
       - devops-network
 
 volumes:
+  jenkins_home_clean:
   jenkins_home:
   nexus_data:
   postgres_data:

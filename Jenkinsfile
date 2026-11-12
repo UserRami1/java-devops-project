@@ -1,6 +1,5 @@
 
 pipeline {
-
     agent any
 
     tools {
@@ -13,7 +12,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Downloading source code...'
@@ -51,6 +49,40 @@ pipeline {
                 )
             }
         }
+
+        stage('Deploy to Nexus') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'nexus-credentials',
+                        usernameVariable: 'NEXUS_USER',
+                        passwordVariable: 'NEXUS_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+
+                        cat > settings.xml <<EOF
+<settings>
+    <servers>
+        <server>
+            <id>nexus</id>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASSWORD}</password>
+        </server>
+    </servers>
+</settings>
+EOF
+
+                        trap 'rm -f settings.xml' EXIT
+
+                        echo "Deploying artifact to Nexus..."
+
+                        mvn -B -ntp -s settings.xml deploy -DskipTests
+                    '''
+                }
+            }
+        }
     }
 
     post {
@@ -64,6 +96,7 @@ pipeline {
         success {
             echo 'CI PIPELINE SUCCESS!'
             echo 'Java JAR generated successfully.'
+            echo 'Artifact deployed to Nexus!'
         }
 
         failure {
