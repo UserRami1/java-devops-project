@@ -8,10 +8,12 @@ pipeline {
 
     options {
         timestamps()
-        timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     stages {
+
+        // 1. CHECKOUT
         stage('Checkout') {
             steps {
                 echo 'Downloading source code...'
@@ -19,6 +21,7 @@ pipeline {
             }
         }
 
+        // 2. BUILD
         stage('Build') {
             steps {
                 echo 'Building Spring Boot application...'
@@ -26,6 +29,7 @@ pipeline {
             }
         }
 
+        // 3. UNIT TESTS
         stage('Test') {
             steps {
                 echo 'Running unit tests...'
@@ -33,6 +37,35 @@ pipeline {
             }
         }
 
+        // 4. SONARQUBE ANALYSIS
+        stage('SonarQube Analysis') {
+            steps {
+                echo 'Analyzing code quality with SonarQube...'
+
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        mvn -B -ntp sonar:sonar \
+                        -Dsonar.projectKey=gestion-station-skii \
+                        -Dsonar.projectName="Gestion Station Ski" \
+                        -Dsonar.java.source=8 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
+                }
+            }
+        }
+
+        // 5. QUALITY GATE
+        stage('SonarQube Quality Gate') {
+            steps {
+                echo 'Checking SonarQube Quality Gate...'
+
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // 6. PACKAGE
         stage('Package') {
             steps {
                 echo 'Generating executable JAR...'
@@ -40,6 +73,7 @@ pipeline {
             }
         }
 
+        // 7. ARCHIVE JAR
         stage('Archive JAR') {
             steps {
                 archiveArtifacts(
@@ -50,6 +84,7 @@ pipeline {
             }
         }
 
+        // 8. DEPLOY TO NEXUS
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([
@@ -96,6 +131,8 @@ EOF
         success {
             echo 'CI PIPELINE SUCCESS!'
             echo 'Java JAR generated successfully.'
+            echo 'SonarQube analysis completed.'
+            echo 'Quality Gate passed.'
             echo 'Artifact deployed to Nexus!'
         }
 
