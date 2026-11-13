@@ -38,21 +38,24 @@ pipeline {
         }
 
         // 4. SONARQUBE ANALYSIS
-        stage('SonarQube Analysis') {
-            steps {
-                echo 'Analyzing code quality with SonarQube...'
+        
+stage('SonarQube Analysis') {
+    steps {
+        echo 'Analyzing code quality with SonarQube...'
 
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        mvn -B -ntp sonar:sonar \
-                        -Dsonar.projectKey=gestion-station-skii \
-                        -Dsonar.projectName="Gestion Station Ski" \
-                        -Dsonar.java.source=8 \
-                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-                    '''
-                }
-            }
+        withSonarQubeEnv('SonarQube') {
+            sh '''
+                mvn -B -ntp \
+                org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
+                -Dsonar.projectKey=gestion-station-skii \
+                -Dsonar.projectName="Gestion Station Ski" \
+                -Dsonar.java.source=8 \
+                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            '''
         }
+    }
+}
+
 
         // 5. QUALITY GATE
         stage('SonarQube Quality Gate') {
