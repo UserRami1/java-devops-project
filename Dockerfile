@@ -1,7 +1,15 @@
-FROM eclipse-temurin:17-jre
 
+# Use Java 8 runtime
+FROM eclipse-temurin:8-jre
+
+# Set working directory
 WORKDIR /app
-COPY --chown=10001:10001 target/gestion-station-skii-0.0.1-SNAPSHOT.jar app.jar
-USER 10001:10001
-EXPOSE 8087
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
+
+# Copy Spring Boot executable JAR
+COPY target/gestion-station-skii-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose application port
+EXPOSE 8080
+
+# Start Spring Boot application
+ENTRYPOINT ["java", "-jar", "app.jar"]
