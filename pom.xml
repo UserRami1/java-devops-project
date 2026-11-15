@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -6,6 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot Parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -13,17 +13,20 @@
         <relativePath/>
     </parent>
 
+    <!-- Project Information -->
     <groupId>com.example</groupId>
     <artifactId>gestion-station-skii</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>gestion-station-skii</name>
     <description>Gestion Station Ski</description>
 
+    <!-- Properties -->
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <!-- Dependencies -->
     <dependencies>
 
         <!-- Spring Boot Web -->
@@ -66,14 +69,14 @@
             <artifactId>jackson-annotations</artifactId>
         </dependency>
 
-        <!-- Testing -->
+        <!-- JUnit 5, Mockito and Spring Boot Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- H2 Database for Unit Tests -->
+        <!-- H2 Database for Tests -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -84,6 +87,7 @@
 
     <!-- Nexus Repository Configuration -->
     <distributionManagement>
+
         <repository>
             <id>nexus</id>
             <name>Nexus Releases</name>
@@ -95,8 +99,10 @@
             <name>Nexus Snapshots</name>
             <url>http://nexus:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
+
     </distributionManagement>
 
+    <!-- Build Configuration -->
     <build>
         <plugins>
 
@@ -114,6 +120,18 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven Surefire: Execute JUnit Tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
             <!-- JaCoCo: Code Coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -122,7 +140,7 @@
 
                 <executions>
 
-                    <!-- Prepare JaCoCo agent before tests -->
+                    <!-- Prepare JaCoCo Agent Before Tests -->
                     <execution>
                         <id>prepare-agent</id>
                         <goals>
@@ -130,13 +148,35 @@
                         </goals>
                     </execution>
 
-                    <!-- Generate coverage report after tests -->
+                    <!-- Generate JaCoCo HTML and XML Reports -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+
+                    <!-- Check Code Coverage -->
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.00</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
                     </execution>
 
                 </executions>

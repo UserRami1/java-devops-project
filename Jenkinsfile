@@ -21,43 +21,35 @@ pipeline {
             }
         }
 
-        // 2. BUILD
-        stage('Build') {
+        // 2. BUILD + UNIT TESTS + JACOCO
+        stage('Build and Test') {
             steps {
-                echo 'Building Spring Boot application...'
-                sh 'mvn -B -ntp clean compile'
+                echo 'Building application and running unit tests...'
+                echo 'Generating JaCoCo coverage report...'
+
+                sh 'mvn -B -ntp clean verify'
             }
         }
 
-        // 3. UNIT TESTS
-        stage('Test') {
+        // 3. SONARQUBE ANALYSIS
+        stage('SonarQube Analysis') {
             steps {
-                echo 'Running unit tests...'
-                sh 'mvn -B -ntp test'
+                echo 'Analyzing code quality with SonarQube...'
+
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        mvn -B -ntp \
+                        org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
+                        -Dsonar.projectKey=gestion-station-skii \
+                        -Dsonar.projectName="Gestion Station Ski" \
+                        -Dsonar.java.source=8 \
+                        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+                    '''
+                }
             }
         }
 
-        // 4. SONARQUBE ANALYSIS
-        
-stage('SonarQube Analysis') {
-    steps {
-        echo 'Analyzing code quality with SonarQube...'
-
-        withSonarQubeEnv('SonarQube') {
-            sh '''
-                mvn -B -ntp \
-                org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
-                -Dsonar.projectKey=gestion-station-skii \
-                -Dsonar.projectName="Gestion Station Ski" \
-                -Dsonar.java.source=8 \
-                -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-            '''
-        }
-    }
-}
-
-
-        // 5. QUALITY GATE
+        // 4. QUALITY GATE
         stage('SonarQube Quality Gate') {
             steps {
                 echo 'Checking SonarQube Quality Gate...'
@@ -68,17 +60,11 @@ stage('SonarQube Analysis') {
             }
         }
 
-        // 6. PACKAGE
-        stage('Package') {
-            steps {
-                echo 'Generating executable JAR...'
-                sh 'mvn -B -ntp package -DskipTests'
-            }
-        }
-
-        // 7. ARCHIVE JAR
+        // 5. ARCHIVE JAR
         stage('Archive JAR') {
             steps {
+                echo 'Archiving generated Spring Boot JAR...'
+
                 archiveArtifacts(
                     artifacts: 'target/*.jar',
                     fingerprint: true,
@@ -87,7 +73,7 @@ stage('SonarQube Analysis') {
             }
         }
 
-        // 8. DEPLOY TO NEXUS
+        // 6. DEPLOY TO NEXUS
         stage('Deploy to Nexus') {
             steps {
                 withCredentials([
@@ -125,15 +111,42 @@ EOF
 
     post {
         always {
+            // Publish JUnit test results
             junit(
                 testResults: 'target/surefire-reports/*.xml',
                 allowEmptyResults: true
+            )
+
+            // Publish JaCoCo coverage metrics
+            recordCoverage(
+                tools: [[
+                    parser: 'JACOCO',
+                    pattern: 'target/site/jacoco/jacoco.xml'
+                ]],
+                failOnError: false
+            )
+
+            // Publish JaCoCo HTML report
+            publishHTML(target: [
+                reportDir: 'target/site/jacoco',
+                reportFiles: 'index.html',
+                reportName: 'JaCoCo Coverage Report',
+                keepAll: true,
+                alwaysLinkToLastBuild: true,
+                allowMissing: true
+            ])
+
+            // Keep JaCoCo files as build artifacts
+            archiveArtifacts(
+                artifacts: 'target/site/jacoco/**',
+                allowEmptyArchive: true
             )
         }
 
         success {
             echo 'CI PIPELINE SUCCESS!'
-            echo 'Java JAR generated successfully.'
+            echo 'Build and unit tests completed.'
+            echo 'JaCoCo coverage report generated.'
             echo 'SonarQube analysis completed.'
             echo 'Quality Gate passed.'
             echo 'Artifact deployed to Nexus!'
