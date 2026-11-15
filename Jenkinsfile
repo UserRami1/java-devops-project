@@ -107,6 +107,46 @@ EOF
                 }
             }
         }
+
+        // 7. BUILD DOCKER IMAGE
+                // 7. BUILD DOCKER IMAGE
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image...'
+
+                sh '''
+                    docker build \
+                        -f dockerfile \
+                        -t raminasri2026/m2awi-skii:${BUILD_NUMBER} \
+                        -t raminasri2026/m2awi-skii:latest \
+                        .
+                '''
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+                        trap 'docker logout || true' EXIT
+
+                        echo "$DOCKER_TOKEN" | docker login \
+                            -u "$DOCKER_USER" --password-stdin
+
+                        docker push raminasri2026/m2awi-skii:${BUILD_NUMBER}
+                        docker push raminasri2026/m2awi-skii:latest
+                    '''
+                }
+            }
+        }
+
     }
 
     post {
