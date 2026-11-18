@@ -1,15 +1,23 @@
 
 services:
   # Jenkins CI/CD
+    # Jenkins CI/CD with Docker support
   jenkins:
-    image: jenkins/jenkins:lts-jdk21
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    image: custom-jenkins-docker:latest
     container_name: jenkins
     restart: unless-stopped
+    user: "1000:1000"
+    group_add:
+      - "0"
     ports:
       - "8080:8080"
       - "50000:50000"
     volumes:
       - jenkins_home_clean:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - devops-network
 
@@ -44,6 +52,41 @@ services:
       timeout: 5s
       retries: 10
 
+  # MySQL for Spring Boot
+  mysql:
+    image: mysql:8.0
+    container_name: station-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: ski_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - devops-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Spring Boot application
+  station-app:
+    image: gestion-station-skii:1.0
+    container_name: gestion-station-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8085:8087"
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/ski_db?createDatabaseIfNotExist=true&serverTimezone=UTC"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root123
+    networks:
+      - devops-network
+
   # SonarQube Code Quality
   sonarqube:
     image: sonarqube:lts-community
@@ -73,6 +116,7 @@ volumes:
   sonarqube_data:
   sonarqube_extensions:
   sonarqube_logs:
+  mysql_data:
 
 networks:
   devops-network:
