@@ -41,12 +41,9 @@ pipeline {
         
 stage('SonarQube Analysis') {
     steps {
-        echo 'Analyzing code quality with SonarQube...'
-
         withSonarQubeEnv('SonarQube') {
             sh '''
-                mvn -B -ntp \
-                org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
+                mvn -B -ntp org.sonarsource.scanner.maven:sonar-maven-plugin:5.3.0.6276:sonar \
                 -Dsonar.projectKey=gestion-station-skii \
                 -Dsonar.projectName="Gestion Station Ski" \
                 -Dsonar.java.source=8 \
@@ -55,7 +52,6 @@ stage('SonarQube Analysis') {
         }
     }
 }
-
 
         // 5. QUALITY GATE
         stage('SonarQube Quality Gate') {
