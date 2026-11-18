@@ -1,0 +1,61 @@
+
+FROM jenkins/jenkins:lts-jdk21
+
+USER root
+
+# Docker CLI
+COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+USER jenkins
+
+# General-purpose Jenkins plugin bundle
+RUN jenkins-plugin-cli --plugins \
+    workflow-aggregator \
+    pipeline-stage-view \
+    pipeline-graph-view \
+    pipeline-utility-steps \
+    git \
+    github \
+    github-branch-source \
+    git-client \
+    scm-api \
+    credentials \
+    credentials-binding \
+    plain-credentials \
+    ssh-credentials \
+    ssh-agent \
+    matrix-auth \
+    pam-auth \
+    role-strategy \
+    mailer \
+    email-ext \
+    timestamper \
+    ws-cleanup \
+    build-timeout \
+    rebuild \
+    config-file-provider \
+    parameterized-trigger \
+    throttle-concurrents \
+    docker-workflow \
+    docker-commons \
+    docker-plugin \
+    maven-plugin \
+    gradle \
+    nodejs \
+    sonar \
+    junit \
+    coverage \
+    htmlpublisher \
+    warnings-ng \
+    jacoco \
+    junit-realtime-test-reporter \
+    antisamy-markup-formatter \
+    dark-theme \
+    favorite \
+    dashboard-view \
+    job-dsl \
+    configuration-as-code
